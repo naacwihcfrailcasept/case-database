@@ -496,7 +496,7 @@
           <span class="sync-dot local" id="syncDot"></span>
           <span id="syncLabel">本機模式</span>
         </div>
-        <button type="button" class="btn-header" onclick="openConfig()">Token 設定</button>
+        <button type="button" class="btn-header" onclick="openConfig()">連線設定</button>
         <button type="button" class="btn-header" onclick="printPage()">列印</button>
       </div>
     </div>
@@ -504,8 +504,8 @@
 
   <div class="container">
     <div class="config-banner" id="configBanner">
-      <span>尚未設定 GitHub Token。資料只存在此瀏覽器。設定後可多人同步。</span>
-      <button type="button" class="btn-primary btn-sm" onclick="openConfig()">設定 Token</button>
+      <span>尚未設定 GitHub 連線。資料只存在此瀏覽器。設定 Owner / Repo / Token 後可多人同步。</span>
+      <button type="button" class="btn-primary btn-sm" onclick="openConfig()">連線設定</button>
     </div>
 
     <div class="stats-bar">
@@ -790,20 +790,37 @@
   </div>
 
   <div class="modal-overlay" id="configModal">
-    <div class="modal">
-      <h3>GitHub Token 設定</h3>
-      <p>只需填入 Personal Access Token。其餘連線資料已固定，無需更改。</p>
+    <div class="modal" style="max-width:480px;">
+      <h3>GitHub 連線設定</h3>
+      <p>可修改 Owner / Repo / Branch / Path 與 Personal Access Token。設定只存在此瀏覽器。</p>
       <div class="form-grid">
         <div class="form-group">
-          <label>Personal Access Token *</label>
+          <label for="cfgOwner">GitHub Owner（用戶名或組織）*</label>
+          <input type="text" id="cfgOwner" placeholder="例如：naacwihcfrailcaseot" autocomplete="off" />
+        </div>
+        <div class="form-group">
+          <label for="cfgRepo">Repository 名稱 *</label>
+          <input type="text" id="cfgRepo" placeholder="例如：WIHC-ICP" autocomplete="off" />
+        </div>
+        <div class="form-group">
+          <label for="cfgBranch">Branch *</label>
+          <input type="text" id="cfgBranch" placeholder="main" autocomplete="off" />
+        </div>
+        <div class="form-group">
+          <label for="cfgPath">資料檔路徑 *</label>
+          <input type="text" id="cfgPath" placeholder="data.json" autocomplete="off" />
+          <div class="hint">Repo 內 JSON 檔的路徑，例如 data.json 或 data/cases.json</div>
+        </div>
+        <div class="form-group">
+          <label for="cfgToken">Personal Access Token *</label>
           <input type="password" id="cfgToken" placeholder="github_pat_… 或 ghp_…" autocomplete="off" />
           <div class="hint">Fine-grained：Contents Read &amp; Write（限本 repo）。經典 token：勾選 repo。</div>
-          <div class="danger-hint">⚠ Token 只存在此瀏覽器，請勿分享此電腦。</div>
+          <div class="danger-hint">⚠ Token 與連線設定只存在此瀏覽器，請勿分享此電腦。</div>
         </div>
       </div>
       <div class="btn-row">
         <button type="button" class="btn-secondary" onclick="closeConfig()">取消</button>
-        <button type="button" class="btn-danger btn-sm" onclick="clearConfig()">清除 Token</button>
+        <button type="button" class="btn-danger btn-sm" onclick="clearConfig()">清除設定</button>
         <button type="button" class="btn-primary" onclick="saveConfig()">儲存並連接</button>
       </div>
     </div>
@@ -813,17 +830,20 @@
 
   <script>
     // ============================================================
-    //  FIXED GitHub settings — edit these once to match your repo
+    //  Default GitHub settings (overridable via 設定 modal + localStorage)
     // ============================================================
-    const GH_OWNER  = 'naacwihcfrailcaseot';
-    const GH_REPO   = 'WIHC-ICP';
-    const GH_BRANCH = 'main';
-    const GH_PATH   = 'data.json';
+    const GH_DEFAULTS = {
+      owner:  'naacwihcfrailcaseot',
+      repo:   'WIHC-ICP',
+      branch: 'main',
+      path:   'data.json'
+    };
     // ============================================================
 
     const MAX_CASELOAD = 70;
     const LOCAL_KEY = 'ot_case_db_v2';
     const TOKEN_KEY = 'ot_case_db_gh_token';
+    const GH_CFG_KEY = 'ot_case_db_gh_cfg';
 
     let cases = [];
     let devices = [];   // [{id, name, note}]
@@ -846,29 +866,82 @@
       else localStorage.removeItem(TOKEN_KEY);
     }
 
+    function getGhCfg() {
+      try {
+        var raw = localStorage.getItem(GH_CFG_KEY);
+        if (raw) {
+          var o = JSON.parse(raw);
+          return {
+            owner:  String(o.owner  || GH_DEFAULTS.owner).trim()  || GH_DEFAULTS.owner,
+            repo:   String(o.repo   || GH_DEFAULTS.repo).trim()   || GH_DEFAULTS.repo,
+            branch: String(o.branch || GH_DEFAULTS.branch).trim() || GH_DEFAULTS.branch,
+            path:   String(o.path   || GH_DEFAULTS.path).trim()   || GH_DEFAULTS.path
+          };
+        }
+      } catch (e) {}
+      return {
+        owner:  GH_DEFAULTS.owner,
+        repo:   GH_DEFAULTS.repo,
+        branch: GH_DEFAULTS.branch,
+        path:   GH_DEFAULTS.path
+      };
+    }
+    function setGhCfg(cfg) {
+      if (!cfg) {
+        localStorage.removeItem(GH_CFG_KEY);
+        return;
+      }
+      localStorage.setItem(GH_CFG_KEY, JSON.stringify({
+        owner:  String(cfg.owner  || '').trim(),
+        repo:   String(cfg.repo   || '').trim(),
+        branch: String(cfg.branch || '').trim() || 'main',
+        path:   String(cfg.path   || '').trim() || 'data.json'
+      }));
+    }
+    // Convenience getters used by pull/push
+    function GH_OWNER()  { return getGhCfg().owner; }
+    function GH_REPO()   { return getGhCfg().repo; }
+    function GH_BRANCH() { return getGhCfg().branch; }
+    function GH_PATH()   { return getGhCfg().path; }
+
     function openConfig() {
+      var cfg = getGhCfg();
+      document.getElementById('cfgOwner').value = cfg.owner;
+      document.getElementById('cfgRepo').value = cfg.repo;
+      document.getElementById('cfgBranch').value = cfg.branch;
+      document.getElementById('cfgPath').value = cfg.path;
       document.getElementById('cfgToken').value = getToken();
       document.getElementById('configModal').classList.add('show');
     }
     function closeConfig() { document.getElementById('configModal').classList.remove('show'); }
     function clearConfig() {
       setToken('');
+      setGhCfg(null);
       fileSha = null;
       updateSyncUI('local', '本機模式');
       document.getElementById('configBanner').classList.remove('hidden');
       closeConfig();
-      toast('已清除 Token，改回本機儲存');
+      toast('已清除連線設定，改回本機儲存');
     }
     async function saveConfig() {
-      const token = document.getElementById('cfgToken').value.trim();
-      if (!token) { toast('請填入 Token'); return; }
-      if (GH_OWNER === 'YOUR_GITHUB_USERNAME') {
-        toast('請先在 HTML 內設定 GH_OWNER（你的 GitHub 用戶名）');
+      var owner  = document.getElementById('cfgOwner').value.trim();
+      var repo   = document.getElementById('cfgRepo').value.trim();
+      var branch = document.getElementById('cfgBranch').value.trim() || 'main';
+      var path   = document.getElementById('cfgPath').value.trim() || 'data.json';
+      var token  = document.getElementById('cfgToken').value.trim();
+      if (!owner || !repo) {
+        toast('請填寫 Owner 與 Repository');
         return;
       }
+      if (!token) {
+        toast('請填入 Token');
+        return;
+      }
+      setGhCfg({ owner: owner, repo: repo, branch: branch, path: path });
       setToken(token);
+      fileSha = null; // force re-fetch after target change
       closeConfig();
-      toast('Token 已儲存，正在連接…');
+      toast('設定已儲存，正在連接…');
       await pullFromGitHub();
     }
 
@@ -987,7 +1060,7 @@
       pullInFlight = true;
       updateSyncUI('syncing', '同步中…');
       try {
-        var url = 'https://api.github.com/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/' + GH_PATH + '?ref=' + encodeURIComponent(GH_BRANCH);
+        var url = 'https://api.github.com/repos/' + GH_OWNER() + '/' + GH_REPO() + '/contents/' + GH_PATH() + '?ref=' + encodeURIComponent(GH_BRANCH());
         var res = await fetch(url, { headers: ghHeaders(token) });
 
         if (res.status === 404) {
@@ -1048,7 +1121,7 @@
       saving = true;
       updateSyncUI('syncing', '儲存中…');
       try {
-        var getUrl = 'https://api.github.com/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/' + GH_PATH + '?ref=' + encodeURIComponent(GH_BRANCH);
+        var getUrl = 'https://api.github.com/repos/' + GH_OWNER() + '/' + GH_REPO() + '/contents/' + GH_PATH() + '?ref=' + encodeURIComponent(GH_BRANCH());
         var getRes = await fetch(getUrl, { headers: ghHeaders(token) });
         if (getRes.ok) {
           var meta = await getRes.json();
@@ -1063,11 +1136,11 @@
         var body = {
           message: message || ('更新個案 ' + new Date().toISOString()),
           content: content,
-          branch: GH_BRANCH
+          branch: GH_BRANCH()
         };
         if (fileSha) body.sha = fileSha;
 
-        var putUrl = 'https://api.github.com/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/' + GH_PATH;
+        var putUrl = 'https://api.github.com/repos/' + GH_OWNER() + '/' + GH_REPO() + '/contents/' + GH_PATH();
         var putRes = await fetch(putUrl, {
           method: 'PUT',
           headers: ghHeaders(token, { 'Content-Type': 'application/json' }),
