@@ -18,13 +18,13 @@
       "name": "H嬋賢",
       "admissionDate": "2015-04-23",
       "icpDate": "2026-03-23",
-      "cognitive": "Dementia",
+      "cognitive": "Normal",
       "otTraining": "Yes",
       "gerontech": "No",
       "status": "active",
       "dischargedAt": null,
       "createdAt": "2026-08-31T08:08:41.226Z",
-      "updatedAt": "2026-11-02T09:58:55.398Z"
+      "updatedAt": "2026-11-02T09:56:24.950Z"
     },
     {
       "id": "mtgymqfjvxbvgt",
@@ -965,11 +965,6 @@
       "id": "mtmc2hizsnb4al",
       "name": "Music Glove",
       "note": ""
-    },
-    {
-      "id": "mtmc2ntvx9sn5w",
-      "name": "板琴",
-      "note": ""
     }
   ],
   "bookings": [
@@ -978,15 +973,6 @@
       "deviceId": "mtmc22g1ntvasp",
       "caseId": "mtgzwwulu462wo",
       "weekday": "2",
-      "startTime": "11:00",
-      "endTime": "12:00",
-      "note": ""
-    },
-    {
-      "id": "mtmce8qrn4r7yk",
-      "deviceId": "mtmc2ntvx9sn5w",
-      "caseId": "mtgzqtx92mety5",
-      "weekday": "1",
       "startTime": "11:00",
       "endTime": "12:00",
       "note": ""
