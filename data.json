@@ -5,13 +5,13 @@
       "name": "K美英",
       "admissionDate": "2003-09-15",
       "icpDate": "2026-09-11",
-      "cognitive": "Normal",
+      "cognitive": "Dementia",
       "otTraining": "Yes",
       "gerontech": "No",
       "status": "active",
       "dischargedAt": null,
       "createdAt": "2026-08-31T08:01:19.299Z",
-      "updatedAt": "2026-11-02T09:52:20.136Z"
+      "updatedAt": "2026-11-02T09:53:13.286Z"
     },
     {
       "id": "mtgyidqikovnnh",
